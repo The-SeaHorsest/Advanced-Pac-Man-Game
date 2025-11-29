@@ -32,6 +32,15 @@ namespace Ghosts
         public GameObject chaseModeTarget;
         public GameObject scatterModeTarget;
 
+        //The special AI control(new)
+        public int currentLevel = 1;                              // The current level of the game
+        protected Vector2 playerVelocity;                           // To predict player movement
+        private float alertnessBoost = 1f;                        // Speed boost when player is alerted
+        private readonly List<Vector3> playerHistory = new List<Vector3>(6); // Record player positions
+        public Transform playerTransform;                         // Find the player transform
+        public float predictionDistance = 2.5f;                   // Distance to predict ahead        
+        public float alertDuration = 5f;                          // Duration of alertness
+
         // Sprites variables
         public SpriteRenderer eyesSpriteRenderer;
         public Sprite[] eyesSpriteArray;
@@ -96,10 +105,32 @@ namespace Ghosts
 
             // Body animation
             bodyAnimator = GetComponent<Animator>();
+
+            //Find the player(new)
+            if (playerTransform == null && chaseModeTarget != null)
+                playerTransform = chaseModeTarget.transform;
+
+            //Get the current level from the GameHandler(new)
+            if (GameHandler.GameHandler.Instance != null)
+                currentLevel = GameHandler.GameHandler.Instance.currentLevel;
+
+            //Increase difficulty by speeding up(new)
+            runSpeed *= (1f + 0.15f * (currentLevel - 1));  // Lv 1: 1x, Lv 2: 1.15x, Lv 3: 1.3x
         }
 
         private void FixedUpdate()
         {
+            //Player trajectory tracking per frame and calculation speed(new)
+            if (playerTransform != null)
+            {
+                playerHistory.Add(playerTransform.position);
+                if (playerHistory.Count > 5)
+                    playerHistory.RemoveAt(0);
+
+                if (playerHistory.Count > 1)
+                    playerVelocity = (playerTransform.position - playerHistory[playerHistory.Count - 2]) / Time.fixedDeltaTime;
+            }
+
             switch (_ghostMode)
             {
                 case GhostMode.Scatter:
@@ -165,9 +196,19 @@ namespace Ghosts
 
         #region Ghost Modes
 
-        protected virtual void Chase()
+        //The Chase method is empty before, all of these are new
+        protected virtual void Chase(Vector2 customTarget = default)
         {
-            // Different depending on ghost
+            Vector2 target;
+
+            if (customTarget != default)  // Use custom target if provided
+                target = customTarget;
+            else  // If no custom target, use predicted player position
+                target = chaseModeTarget.transform.position;
+
+            // Final speed calculation with alertness and level boost(new)
+            float finalSpeed = runSpeed * alertnessBoost * (1f + 0.15f * (currentLevel - 1));
+            ChaseTarget(target, finalSpeed);
         }
 
         private void Scatter()
