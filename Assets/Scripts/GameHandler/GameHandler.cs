@@ -24,6 +24,9 @@ namespace GameHandler
         // Player
         private PlayerController _player;
 
+        // Get the level(new)
+        public int currentLevel = 1;
+
         // Pac-gum
         private int _pacGumCount;
 

@@ -1,10 +1,12 @@
+using UnityEngine;
+
 namespace Ghosts
 {
     public class RedGhostAiMovement : GhostAiMovement
     {
-        protected override void Chase()
+        protected override void Chase(Vector2 customTarget = default)
         {
-            ChaseTarget(chaseModeTarget, runSpeed);
+            base.Chase(); //Basic chase(new) 
         }
     }
 }
